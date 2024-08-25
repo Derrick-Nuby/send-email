@@ -1,7 +1,14 @@
 {
   "name": "send-email",
   "version": "1.0.0",
+  "type": "module",
+  "description": "",
   "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "devstart": "concurrently \"tsc -w\" \"nodemon dist/app.js\"",
+    "start": "node dist/app.js"
+  },
   "repository": "git@github.com:Derrick-Nuby/send-email.git",
   "author": "Derrick-Nuby",
   "license": "MIT",
