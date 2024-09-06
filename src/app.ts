@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import userRoutes from "./routes/user.js";
+import smtpRoutes from "./routes/smtp.js";
 import emailRoutes from "./routes/sendEmail.js";
 
 import dotenv from 'dotenv';
@@ -23,6 +24,7 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 app.use('/api/user', userRoutes);
+app.use('/api/smtp', smtpRoutes);
 app.use('/api/email', emailRoutes);
 app.get('/', (req, res) => {
     res.send('welcome to base app');
