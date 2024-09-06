@@ -1,9 +1,10 @@
 import { Router } from "express";
-import { sendEmailWithInput, sendEmailContained, sendPredefinedAll, fetchPredefined } from "../controllers/sendEmail.js";
+import { sendEmailWithInput, sendEmailContained, sendPredefinedAll, fetchPredefined, sendMail } from "../controllers/sendEmail.js";
 import { adminAuthJWT } from '../middlewares/auth.js';
 
 const router: Router = Router();
 
+router.post("/send", sendMail);
 router.post("/send-input", adminAuthJWT, sendEmailWithInput);
 router.post("/send-contained", adminAuthJWT, sendEmailContained);
 router.post("/send-predefined", adminAuthJWT, sendPredefinedAll);

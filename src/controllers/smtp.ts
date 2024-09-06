@@ -4,10 +4,11 @@ import { encrypt, decrypt } from "../utils/encryption.js";
 
 const createSmtp = async (req: Request, res: Response): Promise<Response> => {
     try {
-        const { name, service, pool, host, port, secure, auth } = req.body;
+        const { name, fromEmail, service, pool, host, port, secure, auth } = req.body;
 
         const newSmtp = new Smtp({
             name,
+            fromEmail,
             service,
             pool,
             host,

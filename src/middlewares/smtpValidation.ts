@@ -7,6 +7,12 @@ const smtpSchema = Joi.object({
         .messages({
             'string.base': 'please name your smtp server correctly',
         }),
+    fromEmail: Joi.string()
+        .email()
+        .messages({
+            'string.empty': 'Email is required',
+            'string.email': 'Invalid email format',
+        }),
     service: Joi.string()
         .messages({
             'string.base': 'the service is string',
@@ -56,12 +62,19 @@ const smtpSchema = Joi.object({
 
 const smtpUpdateSchema = Joi.object({
     name: Joi.string()
+        .required()
         .messages({
             'string.base': 'please name your smtp server correctly',
         }),
     service: Joi.string()
         .messages({
             'string.base': 'the service is string',
+        }),
+    fromEmail: Joi.string()
+        .email()
+        .messages({
+            'string.empty': 'Email is required',
+            'string.email': 'Invalid email format',
         }),
     pool: Joi.boolean()
         .optional()

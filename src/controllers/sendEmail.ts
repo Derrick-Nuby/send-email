@@ -98,4 +98,17 @@ const fetchPredefined = async (req: Request, res: Response): Promise<any> => {
     }
 };
 
-export { sendEmailWithInput, sendEmailContained, sendPredefinedAll, fetchPredefined };
+const sendMail = async (req: Request, res: Response): Promise<any> => {
+    try {
+
+        // in this function a user should select one of his smtps; then select
+
+    } catch (error) {
+        console.log(error);
+
+    }
+};
+
+
+
+export { sendEmailWithInput, sendEmailContained, sendPredefinedAll, fetchPredefined, sendMail };
