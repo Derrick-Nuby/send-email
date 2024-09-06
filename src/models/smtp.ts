@@ -1,5 +1,5 @@
 import { ISmtp } from "../types/smtp";
-import { model, Schema } from "mongoose";
+import mongoose, { model, Schema } from "mongoose";
 import { encrypt } from "../utils/encryption.js";
 
 const smtpSchema: Schema = new Schema(
@@ -44,6 +44,11 @@ const smtpSchema: Schema = new Schema(
     updatedAt: {
       type: Date,
       default: Date.now,
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
     },
   }
 );

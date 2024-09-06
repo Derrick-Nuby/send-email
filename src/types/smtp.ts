@@ -8,6 +8,7 @@ export interface ISmtp extends Document {
     port?: number;
     secure?: boolean;
     fromEmail?: string;
+    createdBy: string;
     auth: {
         user: string;
         pass: string;
