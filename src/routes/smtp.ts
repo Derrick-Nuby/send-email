@@ -1,0 +1,19 @@
+import { Router } from "express";
+import { createSmtp, getAllSmtps, getSingleSmtp, updateSmtp, deleteSmtp } from "../controllers/smtp.js";
+import { validateSmtpAddition, validateSmtpUpdate } from '../middlewares/smtpValidation.js';
+import { adminAuthJWT, userAuthJWT } from '../middlewares/auth.js';
+
+const router: Router = Router();
+
+router.post("/", validateSmtpAddition, createSmtp);
+
+router.get("/", getAllSmtps);
+
+router.get('/:id', getSingleSmtp);
+
+router.put("/:id", validateSmtpUpdate, updateSmtp);
+
+router.delete("/:id", deleteSmtp);
+
+
+export default router;
