@@ -19,7 +19,8 @@ const sendEmailBatch = async (
     fromEmail: string | undefined,
     recipientsBatch: string[],
     subject: string,
-    content: string
+    content: string,
+    batchNumber: number
 ) => {
     try {
         const transporterOptions: any = {
@@ -44,9 +45,9 @@ const sendEmailBatch = async (
         };
 
         const info = await transporter.sendMail(mailOptions);
-        console.log('Batch sent:', info);
+        console.log(`Batch ${batchNumber} sent:`, recipientsBatch);
     } catch (error) {
-        console.error('Error sending email batch:', error);
+        console.error(`Error sending email batch ${batchNumber}:`, error);
     }
 };
 
@@ -65,14 +66,17 @@ const scheduleEmails = async (
 
     while (batchStart < totalEmails) {
         const batch = recipients.slice(batchStart, batchStart + batchLimit);
+        const currentBatchNumber = batchCount + 1;
         setTimeout(() => {
-            console.log(`Sending batch ${batchCount + 1}:`, batch);
-            sendEmailBatch(smtp, fromEmail, batch, subject, content);
+            console.log(`Sending batch ${currentBatchNumber}:`, batch);
+            sendEmailBatch(smtp, fromEmail, batch, subject, content, currentBatchNumber);
         }, batchCount * batchInterval * 60 * 1000); // Convert minutes to milliseconds
 
         batchStart += batchLimit;
         batchCount++;
     }
+
+    console.log(`Scheduled ${batchCount} batches of emails to be sent.`);
 };
 
 const sendMail = async (req: Request, res: Response): Promise<Response> => {
@@ -92,7 +96,7 @@ const sendMail = async (req: Request, res: Response): Promise<Response> => {
         // Schedule the emails based on the limit and interval
         scheduleEmails(smtp, fromEmail, Array.isArray(recipients) ? recipients : [recipients], subject, content, batchLimit, batchInterval);
 
-        return res.status(202).json({ message: 'Email scheduling initiated', totalRecipients: recipients.length });
+        return res.status(202).json({ message: 'Email scheduling initiated', totalRecipients: Array.isArray(recipients) ? recipients.length : 1 });
     } catch (error) {
         console.error('Error initiating email scheduling:', error);
         return res.status(500).json({ error: "Failed to initiate email scheduling" });
