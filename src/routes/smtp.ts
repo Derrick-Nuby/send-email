@@ -1,13 +1,15 @@
 import { Router } from "express";
-import { createSmtp, getAllSmtps, getSingleSmtp, updateSmtp, deleteSmtp } from "../controllers/smtp.js";
+import { createSmtp, getAllSmtps, getSingleSmtp, updateSmtp, deleteSmtp, getUserSmtps } from "../controllers/smtp.js";
 import { validateSmtpAddition, validateSmtpUpdate } from '../middlewares/smtpValidation.js';
 import { adminAuthJWT, userAuthJWT } from '../middlewares/auth.js';
 
 const router: Router = Router();
 
-router.post("/", validateSmtpAddition, createSmtp);
+router.post("/", userAuthJWT, validateSmtpAddition, createSmtp);
 
 router.get("/", getAllSmtps);
+
+router.get("/user", userAuthJWT, getUserSmtps);
 
 router.get('/:id', getSingleSmtp);
 

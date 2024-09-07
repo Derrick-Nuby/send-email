@@ -6,6 +6,8 @@ const createSmtp = async (req: Request, res: Response): Promise<Response> => {
     try {
         const { name, fromEmail, service, pool, host, port, secure, auth } = req.body;
 
+        const userId = req.userId;
+
         const newSmtp = new Smtp({
             name,
             fromEmail,
@@ -15,6 +17,7 @@ const createSmtp = async (req: Request, res: Response): Promise<Response> => {
             port,
             secure,
             auth,
+            createdBy: userId,
         });
 
         await newSmtp.save();
@@ -85,4 +88,15 @@ const deleteSmtp = async (req: Request, res: Response): Promise<Response> => {
     }
 };
 
-export { createSmtp, getAllSmtps, getSingleSmtp, updateSmtp, deleteSmtp };
+const getUserSmtps = async (req: Request, res: Response): Promise<Response> => {
+    try {
+        const userId = req.userId;
+        const smtps = await Smtp.find({ createdBy: userId });
+        return res.status(200).json({ smtps });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: "Server error" });
+    }
+};
+
+export { createSmtp, getAllSmtps, getSingleSmtp, updateSmtp, deleteSmtp, getUserSmtps };
