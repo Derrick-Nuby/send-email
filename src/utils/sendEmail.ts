@@ -1,8 +1,5 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
-import { IResponse } from "../types/response.js";
-import Response from "../models/response.js";
-
 dotenv.config();
 
 if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
@@ -34,20 +31,7 @@ const sendEmail = async ({ email, subject, content }: EmailOptions): Promise<voi
     try {
         const info = await transporter.sendMail(mailOptions);
 
-        const newResponse: IResponse = new Response({
-            message: `Email was successfully sent to: ${email}`,
-            email: email,
-            response: info.response,
-            messageId: info.messageId,
-            envelope: info.envelope,
-            accepted: info.accepted || [],
-            rejected: info.rejected || [],
-            pending: info.pending || [],
-        });
-
-        const savedResponse = await newResponse.save();
-
-        console.log('Saved Response:', savedResponse);
+        console.log('Response:', info);
 
     } catch (error) {
         console.error('Error sending email and saving response:', error);
