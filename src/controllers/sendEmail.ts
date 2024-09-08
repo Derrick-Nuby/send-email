@@ -10,20 +10,26 @@ interface EmailRequest {
     recipients: string | string[];
     subject: string;
     content: string;
+    batchLimit?: number;
+    batchInterval?: number;
 }
 
-const processEmailSending = async (
+interface BatchResult {
+    accepted: string[];
+    rejected: string[];
+    messageId?: string;
+    response?: string;
+}
+
+const sendEmailBatch = async (
     smtp: any,
     fromEmail: string | undefined,
-    recipients: string | string[],
+    recipientsBatch: string[],
     subject: string,
-    content: string
-) => {
+    content: string,
+    batchNumber: number
+): Promise<BatchResult> => {
     try {
-        if (!recipients || (Array.isArray(recipients) && recipients.length === 0)) {
-            throw new Error("No recipients defined");
-        }
-
         const transporterOptions: any = {
             service: smtp.service,
             pool: smtp.pool,
@@ -36,33 +42,98 @@ const processEmailSending = async (
             },
         };
 
-        Object.keys(transporterOptions).forEach(key => {
-            if (transporterOptions[key as keyof typeof transporterOptions] === undefined) {
-                delete transporterOptions[key as keyof typeof transporterOptions];
-            }
-        });
-
         const transporter = nodemailer.createTransport(transporterOptions);
-
-        const toEmails = Array.isArray(recipients) ? recipients : [recipients];
 
         const mailOptions: nodemailer.SendMailOptions = {
             from: fromEmail || smtp.fromEmail,
-            to: toEmails,
+            to: recipientsBatch,
             subject,
             html: content,
         };
 
         const info = await transporter.sendMail(mailOptions);
 
-        const adminReportingEmail = process.env.REAL_REPORT_EMAIL;
+        console.log(`Batch ${batchNumber} sent:`, recipientsBatch);
+        return {
+            accepted: (info.accepted || []).map(recipient =>
+                typeof recipient === 'string' ? recipient : recipient.address
+            ),
+            rejected: (info.rejected || []).map(recipient =>
+                typeof recipient === 'string' ? recipient : recipient.address
+            ),
+            messageId: info.messageId,
+            response: info.response
+        };
+    } catch (error: unknown) {
+        console.error(`Error sending email batch ${batchNumber}:`, error);
+        return {
+            accepted: [],
+            rejected: recipientsBatch,
+            response: error instanceof Error ? error.message : String(error)
+        };
+    }
+};
 
+const scheduleEmails = async (
+    smtp: any,
+    fromEmail: string | undefined,
+    recipients: string[],
+    subject: string,
+    content: string,
+    batchLimit: number,
+    batchInterval: number
+): Promise<BatchResult[]> => {
+    const totalEmails = recipients.length;
+    let batchStart = 0;
+    let batchCount = 0;
+    const results: BatchResult[] = [];
+
+    while (batchStart < totalEmails) {
+        const batch = recipients.slice(batchStart, batchStart + batchLimit);
+        const currentBatchNumber = batchCount + 1;
+
+        const result = await new Promise<BatchResult>((resolve) => {
+            setTimeout(async () => {
+                console.log(`Sending batch ${currentBatchNumber}:`, batch);
+                const batchResult = await sendEmailBatch(smtp, fromEmail, batch, subject, content, currentBatchNumber);
+                resolve(batchResult);
+            }, batchCount * batchInterval * 60 * 1000);
+        });
+
+        results.push(result);
+        batchStart += batchLimit;
+        batchCount++;
+    }
+
+    console.log(`Completed sending ${batchCount} batches of emails.`);
+    return results;
+};
+
+const sendMailBackground = async (
+    smtp: any,
+    fromEmail: string | undefined,
+    recipients: string[],
+    subject: string,
+    content: string,
+    batchLimit: number,
+    batchInterval: number
+) => {
+    try {
+        const batchResults = await scheduleEmails(smtp, fromEmail, recipients, subject, content, batchLimit, batchInterval);
+
+        const aggregatedResult: BatchResult = batchResults.reduce((acc, result) => ({
+            accepted: [...acc.accepted, ...result.accepted],
+            rejected: [...acc.rejected, ...result.rejected],
+            messageId: acc.messageId || result.messageId,
+            response: acc.response || result.response
+        }), { accepted: [], rejected: [], messageId: '', response: '' });
+
+        const adminReportingEmail = process.env.REAL_REPORT_EMAIL;
         if (!adminReportingEmail) {
-            console.warn('REAL_REPORT_EMAIL environment variable is not set');
-            return;
+            throw new Error('REAL_REPORT_EMAIL environment variable is not set');
         }
 
-        const { subject: adminSubject, htmlContent } = formatAdminReport(info);
+        const { subject: adminSubject, htmlContent } = formatAdminReport(aggregatedResult);
 
         await sendEmail({
             email: adminReportingEmail,
@@ -70,27 +141,14 @@ const processEmailSending = async (
             content: htmlContent,
         });
 
+        console.log('Email sending completed and admin report sent');
     } catch (error) {
-        console.error('Error in processEmailSending:', error);
-        if (error instanceof Error) {
-            await sendAdminErrorReport(error.message);
-        }
-    }
-};
-
-const sendAdminErrorReport = async (errorMessage: string) => {
-    const adminReportingEmail = process.env.REAL_REPORT_EMAIL;
-    if (adminReportingEmail) {
-        await sendEmail({
-            email: adminReportingEmail,
-            subject: 'Error in Email Sending Process',
-            content: `An error occurred while sending an email: ${errorMessage}`
-        });
+        console.error('Error in background email sending process:', error);
     }
 };
 
 const sendMail = async (req: Request, res: Response): Promise<Response> => {
-    const { smtpId, fromEmail, recipients, subject, content } = req.body as EmailRequest;
+    const { smtpId, fromEmail, recipients, subject, content, batchLimit = 24, batchInterval = 60 } = req.body as EmailRequest;
 
     try {
         if (!recipients || (Array.isArray(recipients) && recipients.length === 0)) {
@@ -103,11 +161,16 @@ const sendMail = async (req: Request, res: Response): Promise<Response> => {
             return res.status(400).json({ error: "SMTP not found" });
         }
 
-        processEmailSending(smtp, fromEmail, recipients, subject, content);
+        setImmediate(() => {
+            sendMailBackground(smtp, fromEmail, Array.isArray(recipients) ? recipients : [recipients], subject, content, batchLimit, batchInterval);
+        });
 
-        return res.status(202).json({ message: 'Email sending process initiated' });
+        return res.status(202).json({
+            message: 'Email sending process initiated',
+            totalRecipients: Array.isArray(recipients) ? recipients.length : 1
+        });
     } catch (error) {
-        console.error('Error initiating email send:', error);
+        console.error('Error initiating email sending process:', error);
         return res.status(500).json({ error: "Failed to initiate email sending process" });
     }
 };
