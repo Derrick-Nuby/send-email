@@ -129,7 +129,7 @@ export const formatAdminReport = (info: any): EmailReport => {
   <body>
     <div class="container">
       <div class="header">
-        <h1>Email Sending Report - DerceGroup Ltd</h1>
+        <h1>Email Sending Report - DercedGroup Ltd</h1>
       </div>
       <div class="summary">
         <p><strong>Total Emails Sent:</strong> ${totalSent}</p>
@@ -183,10 +183,10 @@ export const formatAdminReport = (info: any): EmailReport => {
         <p>${response}</p>
       </div>
       <div class="footer">
-        <p><strong>DerceGroup Ltd</strong></p>
+        <p><strong>DercedGroup Ltd</strong></p>
         <p>Located: Kigali, Gasabo, Gacuriro</p>
-        <p>&copy; ${new Date().getFullYear()} DerceGroup Ltd. All rights reserved.</p>
-        <p><a href="https://dercegroup.com">Visit Our Website</a></p>
+        <p>&copy; ${new Date().getFullYear()} DercedGroup Ltd. All rights reserved.</p>
+        <p><a href="https://DercedGroup.com">Visit Our Website</a></p>
       </div>
     </div>
   </body>

@@ -31,7 +31,7 @@ const sendEmail = async ({ email, subject, content }: EmailOptions): Promise<voi
     try {
         const info = await transporter.sendMail(mailOptions);
 
-        console.log('Response:', info);
+        // console.log(`Email sent from ${info.envelope.from} to ${info.envelope.to}. Status: ${info.response.includes('OK') ? 'OK' : 'Not OK'}`);
 
     } catch (error) {
         console.error('Error sending email and saving response:', error);
