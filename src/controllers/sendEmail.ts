@@ -148,7 +148,7 @@ const sendMailBackground = async (
 };
 
 const sendMail = async (req: Request, res: Response): Promise<Response> => {
-    const { smtpId, fromEmail, recipients, subject, content, batchLimit = 24, batchInterval = 60 } = req.body as EmailRequest;
+    const { smtpId, fromEmail, recipients, subject, content, batchLimit = 500, batchInterval = 1440 } = req.body as EmailRequest;
 
     try {
         if (!recipients || (Array.isArray(recipients) && recipients.length === 0)) {
