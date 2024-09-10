@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import userRoutes from "./routes/user.js";
 import smtpRoutes from "./routes/smtp.js";
 import emailRoutes from "./routes/sendEmail.js";
+import segmentRoutes from "./routes/segment.js";
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -26,6 +27,7 @@ app.use(express.json());
 app.use('/api/user', userRoutes);
 app.use('/api/smtp', smtpRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/segment', segmentRoutes);
 app.get('/', (req, res) => {
     res.send('welcome to base app');
 });
