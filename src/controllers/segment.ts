@@ -1,6 +1,6 @@
 import { Response, Request } from "express";
-import { ISegment } from "../types/segment";
-import Segment from "../models/segment";
+import { ISegment } from "../types/segment.js";
+import Segment from "../models/segment.js";
 
 const getSegments = async (req: Request, res: Response): Promise<any> => {
     try {

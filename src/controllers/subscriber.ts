@@ -1,7 +1,7 @@
 import { Response, Request } from "express";
-import { ISubscriber } from "../types/subscriber";
-import Subscriber from "../models/subscriber";
-import Segment from "../models/segment";
+import { ISubscriber } from "../types/subscriber.js";
+import Subscriber from "../models/subscriber.js";
+import Segment from "../models/segment.js";
 
 const getSubscribers = async (req: Request, res: Response): Promise<any> => {
     try {
