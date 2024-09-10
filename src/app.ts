@@ -6,6 +6,7 @@ import userRoutes from "./routes/user.js";
 import smtpRoutes from "./routes/smtp.js";
 import emailRoutes from "./routes/sendEmail.js";
 import segmentRoutes from "./routes/segment.js";
+import subscriberRoutes from "./routes/subscriber.js";
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -28,6 +29,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/smtp', smtpRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/segment', segmentRoutes);
+app.use('/api/subscriber', subscriberRoutes);
 app.get('/', (req, res) => {
     res.send('welcome to base app');
 });
