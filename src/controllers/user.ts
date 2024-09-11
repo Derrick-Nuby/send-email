@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
-import { Response, Request } from "express"
-import { IUser } from "../types/user.js"
-import User from "../models/user.js"
+import { Response, Request } from "express";
+import { IUser } from "../types/user.js";
+import User from "../models/user.js";
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -9,42 +9,6 @@ import jwt from 'jsonwebtoken';
 
 
 const jwtSecret = process.env.JWT_SECRET || 'defaultSecret';
-
-const cookieCreator = async (req: Request, res: Response): Promise<any> => {
-  try {
-    // Fetch the first user from the database
-    const user = await User.findOne();
-
-    if (!user) {
-      return res.status(404).json({ error: 'No users found in the database' });
-    }
-
-    const { id, name, email, isAdmin } = user;
-
-    // Create a token for the user
-    const token = jwt.sign(
-      { id, username: name, email, isAdmin },
-      jwtSecret,
-      { expiresIn: '1y' }
-    );
-
-    // Set the token as a cookie that expires in one year
-    const expiryDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year
-
-    res.cookie('jwt', token, { httpOnly: true, path: '/', expires: expiryDate });
-
-    // Respond with a success message
-    res.status(200).json({
-      message: 'Cookie created successfully',
-      token,
-      user: { id, username: name, email, isAdmin }
-    });
-  } catch (error) {
-    console.error("Error creating cookie:", error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
 
 const createAccount = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -61,17 +25,17 @@ const createAccount = async (req: Request, res: Response): Promise<any> => {
       email,
       password,
       isAdmin,
-    })
+    });
 
-    const newUser: IUser = await user.save()
-    
+    const newUser: IUser = await user.save();
+
     res
       .status(201)
-      .json({ message: "User Created Successfully", user: { name, email } })
+      .json({ message: "User Created Successfully", user: { name, email } });
   } catch (error) {
-    throw error
+    throw error;
   }
-}
+};
 
 const loginUser = async (req: Request, res: Response): Promise<any> => {
   try {
@@ -89,18 +53,18 @@ const loginUser = async (req: Request, res: Response): Promise<any> => {
       return res.status(401).json({ error: "Invalid password" });
     }
     const { id, name, email: userEmail, isAdmin } = user;
-    
-    const token = jwt.sign({ id, username: name, email: userEmail, isAdmin }, jwtSecret)
+
+    const token = jwt.sign({ id, username: name, email: userEmail, isAdmin }, jwtSecret);
 
     const expiryDate = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000);
 
-      res.cookie(
-        'jwt',
-        token,
-        {httpOnly: true, path: '/', expires: expiryDate},
-        
-      ),
-    
+    res.cookie(
+      'jwt',
+      token,
+      { httpOnly: true, path: '/', expires: expiryDate },
+
+    ),
+
       res.status(200).json({ message: "User logged in successfully", user: { id, username: name, email: userEmail, isAdmin }, token });
   } catch (error) {
     // Handle any errors
@@ -113,9 +77,9 @@ const loginUser = async (req: Request, res: Response): Promise<any> => {
 const getAllUsers = async (req: Request, res: Response): Promise<any> => {
   try {
     const users: IUser[] = await User.find();
-    res.status(200).json({ users })
+    res.status(200).json({ users });
   } catch (error) {
-    throw error
+    throw error;
   }
 };
 
@@ -163,7 +127,7 @@ const deleteUser = async (req: Request, res: Response): Promise<any> => {
     const userId = req.userId;
     // const isAdmin = req.isAdmin;
 
-    
+
     // if (isAdmin === true) {
     //   const deletedUser = await User.findOneAndDelete({ _id: userId });
     //   return res.status(200).json({
@@ -205,7 +169,7 @@ const logoutUser = (req: Request, res: Response): void => {
     res.status(401).json({ error: 'User is not logged in' });
     return;
   }
-  
+
   res.clearCookie('jwt', { path: '/' });
 
   res.status(200).json({ message: 'User logged out successfully' });
@@ -217,13 +181,14 @@ const getSingleUser = async (req: Request, res: Response): Promise<any> => {
     const user: IUser | null = await User.findById(userId);
 
     if (!user) {
-      return res.status(404).json({  });
+      return res.status(404).json({});
     }
 
     const { _id, name, phone, email } = user;
-    
+
     res.status(200).json(
-      { message: "You are logged in as",
+      {
+        message: "You are logged in as",
         user: {
           _id,
           name,
@@ -233,10 +198,10 @@ const getSingleUser = async (req: Request, res: Response): Promise<any> => {
       }
     );
   } catch (error) {
-    throw error
+    throw error;
   }
 };
 
 
 
-export { createAccount, loginUser, getAllUsers, modifyUser, deleteUser, logoutUser, getSingleUser, cookieCreator }
+export { createAccount, loginUser, getAllUsers, modifyUser, deleteUser, logoutUser, getSingleUser };
