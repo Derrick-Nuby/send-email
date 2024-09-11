@@ -33,15 +33,8 @@ const responseSchema: Schema = new Schema(
         pending: {
             type: [String],
         },
-        createdAt: {
-            type: Date,
-            default: Date.now,
-        },
-        updatedAt: {
-            type: Date,
-            default: Date.now,
-        },
-    }
+    },
+    { timestamps: true }
 );
 
 export default model<IResponse>("Response", responseSchema);

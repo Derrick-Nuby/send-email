@@ -37,20 +37,13 @@ const smtpSchema: Schema = new Schema(
         required: true,
       },
     },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now,
-    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
-  }
+  },
+  { timestamps: true }
 );
 
 
