@@ -29,7 +29,7 @@ app.use(cookieParser());
 app.use(express.json());
 app.use('/api/user', userRoutes);
 app.use('/api/smtps', smtpRoutes);
-app.use('/api/email', emailRoutes);
+app.use('/api/emails', emailRoutes);
 app.use('/api/segments', segmentRoutes);
 app.use('/api/subscribers', subscriberRoutes);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
