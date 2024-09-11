@@ -41,6 +41,11 @@
  *         password:
  *           type: string
  *           description: The user's password
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  */
 
 /**
@@ -48,7 +53,7 @@
  * /api/user:
  *   post:
  *     summary: Create a new user account
- *     description: Endpoint to create a new user account.
+ *     description: Endpoint to create a new user account. No authentication required.
  *     tags: [Users]
  *     requestBody:
  *       required: true
@@ -84,7 +89,7 @@
  * /api/user/login:
  *   post:
  *     summary: Log in a user
- *     description: Endpoint for user login.
+ *     description: Endpoint for user login. No authentication required.
  *     tags: [Users]
  *     requestBody:
  *       required: true
@@ -128,8 +133,10 @@
  * /api/user/all:
  *   get:
  *     summary: Get all users
- *     description: Fetches a list of all users. Requires admin privileges.
+ *     description: Fetches a list of all users. Requires admin authentication.
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: A list of users
@@ -142,6 +149,8 @@
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized - Admin access required
  *       500:
  *         description: Internal server error
  */
@@ -151,8 +160,10 @@
  * /api/user:
  *   put:
  *     summary: Update user details
- *     description: Update the details of the logged-in user.
+ *     description: Update the details of the logged-in user. Requires user authentication.
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -178,6 +189,8 @@
  *                       type: string
  *                     email:
  *                       type: string
+ *       401:
+ *         description: Unauthorized - User authentication required
  *       404:
  *         description: User not found
  *       500:
@@ -189,8 +202,10 @@
  * /api/user:
  *   delete:
  *     summary: Delete a user
- *     description: Delete the logged-in user's account.
+ *     description: Delete the logged-in user's account. Requires user authentication.
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -213,7 +228,7 @@
  *       400:
  *         description: Password and confirmation are required
  *       401:
- *         description: Invalid password or confirmation
+ *         description: Unauthorized - User authentication required or invalid password
  *       404:
  *         description: User not found
  *       500:
@@ -223,15 +238,17 @@
 /**
  * @swagger
  * /api/user/logout:
- *   post:
+ *   get:
  *     summary: Log out a user
- *     description: Endpoint for user logout.
+ *     description: Endpoint for user logout. Requires user authentication.
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: User logged out successfully
  *       401:
- *         description: User is not logged in
+ *         description: Unauthorized - User is not logged in
  */
 
 /**
@@ -239,8 +256,10 @@
  * /api/user/you:
  *   get:
  *     summary: Get current user details
- *     description: Fetch details of the logged-in user.
+ *     description: Fetch details of the logged-in user. Requires user authentication.
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: User details retrieved successfully
@@ -262,6 +281,8 @@
  *                       type: string
  *                     email:
  *                       type: string
+ *       401:
+ *         description: Unauthorized - User authentication required
  *       404:
  *         description: User not found
  *       500:
