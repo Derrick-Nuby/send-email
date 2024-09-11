@@ -2,6 +2,9 @@ import { Response, Request } from "express";
 import { ISubscriber } from "../types/subscriber.js";
 import Subscriber from "../models/subscriber.js";
 import Segment from "../models/segment.js";
+import csv from "csv-parser";
+import fs from "fs";
+import { Types } from "mongoose";
 
 const getAllAppSubscribers = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -165,14 +168,82 @@ const deleteSubscriber = async (req: Request, res: Response): Promise<any> => {
     }
 };
 
-const uploadSubscribersByCSV = async (req: Request, res: Response): Promise<any> => {
+interface MulterRequest extends Request {
+    file?: Express.Multer.File;
+}
+
+const uploadSubscribersByCSV = async (req: MulterRequest, res: Response): Promise<void> => {
     try {
 
-        return res.status(200).json({ message: "1234 subscribers have been created this is a json ontaining their name and emails and ids" });
+        const userId = new Types.ObjectId(req.userId);
 
+        if (!req.userId) {
+            res.status(400).json({ message: "No file uploaded" });
+            return;
+        }
+
+        if (!req.file) {
+            res.status(400).json({ message: "No file uploaded" });
+            return;
+        }
+
+        const results: ISubscriber[] = [];
+
+        fs.createReadStream(req.file.path, { encoding: 'utf-8' })
+            .pipe(csv({
+                skipLines: 0,
+                strict: true
+            }))
+            .on('data', (data) => {
+                const subscriber: Partial<ISubscriber> = {
+                    name: data.name,
+                    email: data.email,
+                    notes: data.notes,
+                    isSubscribed: true,
+                    segmentId: data.segmentId,
+                    createdBy: userId,
+                    customFields: {}
+                };
+
+                Object.keys(data).forEach(key => {
+                    if (!['name', 'email', 'notes', 'isSubscribed', 'segmentId', 'createdBy'].includes(key)) {
+                        subscriber.customFields![key] = data[key];
+                    }
+                });
+
+                if (subscriber.name && subscriber.email) {
+                    results.push(subscriber);
+                }
+            })
+            .on('end', async () => {
+                fs.unlinkSync(req.file!.path);
+
+                if (results.length > 0) {
+                    try {
+                        await Subscriber.insertMany(results);
+
+                        res.status(200).json({
+                            message: `${results.length} subscribers have been successfully uploaded and saved to the database`,
+                            subscribers: results
+                        });
+                    } catch (error) {
+                        console.error('Error saving subscribers to the database:', error);
+                        res.status(500).json({ message: "Error saving subscribers to the database" });
+                    }
+                } else {
+                    res.status(400).json({ message: "No valid subscribers found in the file" });
+                }
+            })
+            .on('error', (error) => {
+                console.error('Error parsing CSV:', error);
+                res.status(500).json({ message: "Error processing CSV file" });
+            });
     } catch (error) {
-
+        console.error('Error processing request:', error);
+        res.status(500).json({ message: "Internal server error" });
     }
 };
+
+
 
 export { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV };
