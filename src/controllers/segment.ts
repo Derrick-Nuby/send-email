@@ -2,6 +2,22 @@ import { Response, Request } from "express";
 import { ISegment } from "../types/segment.js";
 import Segment from "../models/segment.js";
 
+const getAllAppSegments = async (req: Request, res: Response): Promise<any> => {
+    try {
+
+        const segments: ISegment[] = await Segment.find();
+
+        if (segments.length <= 0) {
+            return res.status(404).json({ message: "there are no segments" });
+        }
+
+        return res.status(200).json({ segments });
+
+    } catch (error) {
+        return res.status(500).json({ error: "Failed to retrieve segments" });
+    }
+};
+
 const getSegments = async (req: Request, res: Response): Promise<any> => {
     try {
         const userId = req.userId;
@@ -9,10 +25,10 @@ const getSegments = async (req: Request, res: Response): Promise<any> => {
         const segments: ISegment[] = await Segment.find({ createdBy: userId });
 
         if (segments.length <= 0) {
-            res.status(404).json({ message: "there are no segments" });
+            return res.status(404).json({ message: "there are no segments" });
         }
 
-        res.status(200).json({ segments });
+        return res.status(200).json({ segments });
 
     } catch (error) {
         return res.status(500).json({ error: "Failed to retrieve segments" });
@@ -28,10 +44,10 @@ const getSingleSegment = async (req: Request, res: Response): Promise<any> => {
         const segment: ISegment | null = await Segment.findById({ _id: segmentID, createdBy: userId });
 
         if (!segment) {
-            res.status(404).json({ message: "that segment doesnt exist" });
+            return res.status(404).json({ message: "that segment doesnt exist" });
         }
 
-        res.status(200).json({ segment });
+        return res.status(200).json({ segment });
 
     } catch (error) {
         return res.status(500).json({ error: "Failed to retrieve segment" });
@@ -52,9 +68,7 @@ const createSegment = async (req: Request, res: Response): Promise<any> => {
 
         const newSegment: ISegment = await segment.save();
 
-        res
-            .status(201)
-            .json({ newSegment });
+        return res.status(201).json({ newSegment });
 
     } catch (error) {
         console.log(error);
@@ -76,10 +90,10 @@ const updateSegment = async (req: Request, res: Response): Promise<any> => {
         );
 
         if (!updatedSegment) {
-            res.status(404).json({ message: "that segment doesnt exist" });
+            return res.status(404).json({ message: "that segment doesnt exist" });
         }
 
-        res.status(200).json({ updatedSegment });
+        return res.status(200).json({ updatedSegment });
 
     } catch (error) {
         console.log(error);
@@ -96,10 +110,10 @@ const deleteSegement = async (req: Request, res: Response): Promise<any> => {
         const deletedSegment: ISegment | null = await Segment.findOneAndDelete({ _id: segmentID, createdBy: userId });
 
         if (!deletedSegment) {
-            res.status(404).json({ message: "that segment doesnt exist" });
+            return res.status(404).json({ message: "that segment doesnt exist" });
         }
 
-        res.status(200).json({ deletedSegment });
+        return res.status(200).json({ deletedSegment });
 
     } catch (error) {
         console.log(error);
@@ -107,4 +121,4 @@ const deleteSegement = async (req: Request, res: Response): Promise<any> => {
     }
 };
 
-export { getSegments, getSingleSegment, createSegment, updateSegment, deleteSegement };
+export { getSegments, getSingleSegment, createSegment, updateSegment, deleteSegement, getAllAppSegments };
