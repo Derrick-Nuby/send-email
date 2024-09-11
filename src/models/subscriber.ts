@@ -24,6 +24,11 @@ const subscriberSchema: Schema = new Schema(
             ref: 'Segment',
             required: true,
         },
+        createdBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+        },
         customFields: {
             type: Map,
             of: Schema.Types.Mixed,

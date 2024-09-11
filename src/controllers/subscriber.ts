@@ -29,13 +29,12 @@ const getAllAppSubscribers = async (req: Request, res: Response): Promise<any> =
     }
 };
 
-
 const getSubscribersBySegment = async (req: Request, res: Response): Promise<any> => {
     try {
         const segmentId = req.params.segmentId;
         const userId = req.userId;
 
-        const subscribers: ISubscriber[] = await Subscriber.find({ segmentId });
+        const subscribers: ISubscriber[] = await Subscriber.find({ segmentId, createdBy: userId });
 
         if (subscribers.length <= 0) {
             return res.status(404).json({ message: "there are no subscribers" });
@@ -50,8 +49,9 @@ const getSubscribersBySegment = async (req: Request, res: Response): Promise<any
 
 const getSubscribers = async (req: Request, res: Response): Promise<any> => {
     try {
-        const subscribers: ISubscriber[] = await Subscriber.find();
         const userId = req.userId;
+
+        const subscribers: ISubscriber[] = await Subscriber.find({ createdBy: userId });
 
         if (subscribers.length <= 0) {
             return res.status(404).json({ message: "there are no subscribers" });
@@ -67,10 +67,11 @@ const getSubscribers = async (req: Request, res: Response): Promise<any> => {
 const getSingleSubscriber = async (req: Request, res: Response): Promise<any> => {
     try {
 
+        const userId = req.userId;
         const subscriberID = req.params.id;
 
         const subscriber: ISubscriber | null = await Subscriber
-            .findById(subscriberID)
+            .findOne({ _id: subscriberID, createdBy: userId })
             .populate({
                 path: 'segmentId',
                 model: Segment,
@@ -97,11 +98,14 @@ const createSubscriber = async (req: Request, res: Response): Promise<any> => {
     try {
         const { name, email, notes, segmentId, customFields } = req.body;
 
+        const userId = req.userId;
+
         const subscriber: ISubscriber = new Subscriber({
             name,
             email,
             notes,
             segmentId,
+            createdBy: userId,
             isSubscribed: true,
             customFields,
         });
@@ -119,11 +123,12 @@ const createSubscriber = async (req: Request, res: Response): Promise<any> => {
 const updateSubscriber = async (req: Request, res: Response): Promise<any> => {
     try {
 
+        const userId = req.userId;
         const subscriberID = req.params.id;
         const updateFields = req.body;
 
-        const updatedSubscriber: ISubscriber | null = await Subscriber.findByIdAndUpdate(
-            { _id: subscriberID },
+        const updatedSubscriber: ISubscriber | null = await Subscriber.findOneAndUpdate(
+            { _id: subscriberID, createdBy: userId },
             updateFields,
             { new: true }
         );
@@ -143,9 +148,10 @@ const updateSubscriber = async (req: Request, res: Response): Promise<any> => {
 const deleteSubscriber = async (req: Request, res: Response): Promise<any> => {
     try {
 
+        const userId = req.userId;
         const subscriberID = req.params.id;
 
-        const deletedSubscriber: ISubscriber | null = await Subscriber.findOneAndDelete({ _id: subscriberID });
+        const deletedSubscriber: ISubscriber | null = await Subscriber.findOneAndDelete({ _id: subscriberID, createdBy: userId });
 
         if (!deletedSubscriber) {
             return res.status(404).json({ message: "that subscriber doesnt exist" });
