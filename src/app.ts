@@ -30,7 +30,7 @@ app.use(express.json());
 app.use('/api/user', userRoutes);
 app.use('/api/smtp', smtpRoutes);
 app.use('/api/email', emailRoutes);
-app.use('/api/segment', segmentRoutes);
+app.use('/api/segments', segmentRoutes);
 app.use('/api/subscriber', subscriberRoutes);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/', (req, res) => {
