@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers } from "../controllers/subscriber.js";
+import { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV } from "../controllers/subscriber.js";
 import { adminAuthJWT, userAuthJWT } from '../middlewares/auth.js';
 import { validateSubscriberCreation, validateSubscriberUpdate } from "../middlewares/subscriberValidation.js";
 
@@ -18,6 +18,8 @@ router.post("/", userAuthJWT, validateSubscriberCreation, createSubscriber);
 router.put("/:id", userAuthJWT, validateSubscriberUpdate, updateSubscriber);
 
 router.delete("/:id", userAuthJWT, deleteSubscriber);
+
+router.post("/file", userAuthJWT, uploadSubscribersByCSV);
 
 
 export default router;

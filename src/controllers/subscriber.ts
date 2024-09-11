@@ -165,4 +165,14 @@ const deleteSubscriber = async (req: Request, res: Response): Promise<any> => {
     }
 };
 
-export { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers };
+const uploadSubscribersByCSV = async (req: Request, res: Response): Promise<any> => {
+    try {
+
+        return res.status(200).json({ message: "1234 subscribers have been created this is a json ontaining their name and emails and ids" });
+
+    } catch (error) {
+
+    }
+};
+
+export { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV };
