@@ -275,6 +275,17 @@
  *     tags: [Subscribers]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: CSV file containing subscriber data
  *     responses:
  *       200:
  *         description: Subscribers created successfully from CSV
@@ -286,6 +297,44 @@
  *                 message:
  *                   type: string
  *                   example: "1234 subscribers have been created"
+ *                 subscribers:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                       notes:
+ *                         type: string
+ *                       isSubscribed:
+ *                         type: boolean
+ *                       segmentId:
+ *                         type: string
+ *                       createdBy:
+ *                         type: string
+ *                       customFields:
+ *                         type: object
+ *                         additionalProperties: true
+ *       400:
+ *         description: No file uploaded or invalid file type
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "No file uploaded or invalid file type"
  *       500:
  *         description: Failed to create subscribers from CSV
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Failed to create subscribers from CSV"
  */
