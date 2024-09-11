@@ -3,6 +3,7 @@ import sendEmail from "../utils/sendEmail.js";
 import { getSmtp } from "../utils/getSmtp.js";
 import nodemailer from 'nodemailer';
 import { formatAdminReport } from "../utils/emailReport.js";
+import { getSubscribersBySegment, getUserSubscribers } from "../utils/getEmails.js";
 
 interface EmailRequest {
     smtpId: string;
@@ -12,8 +13,9 @@ interface EmailRequest {
     content: string;
     batchLimit?: number;
     batchInterval?: number;
+    method?: 'mySubscriberList' | 'bySegment';
+    segmentId?: string;
 }
-
 interface BatchResult {
     accepted: string[];
     rejected: string[];
@@ -175,4 +177,60 @@ const sendMail = async (req: Request, res: Response): Promise<Response> => {
     }
 };
 
-export { sendMail };
+const sendToPredefinedUsers = async (req: Request, res: Response): Promise<Response> => {
+    const { smtpId, fromEmail, subject, content, batchLimit = 500, batchInterval = 1440, method = 'mySubscriberList', segmentId } = req.body as EmailRequest;
+
+    try {
+        if (!['mySubscriberList', 'bySegment'].includes(method)) {
+            return res.status(400).json({ error: "Invalid method specified" });
+        }
+
+        const userId = req.userId;
+        if (!userId) {
+            return res.status(404).json({ error: "User ID not found" });
+        }
+
+        let recipients: string[] = [];
+
+        if (method === 'mySubscriberList') {
+            const subscribers = await getUserSubscribers(userId);
+            if (typeof subscribers === 'string') {
+                return res.status(404).json({ error: subscribers });
+            }
+            recipients = subscribers.map(sub => sub.email);
+        } else if (method === 'bySegment') {
+            if (!segmentId) {
+                return res.status(400).json({ error: "Segment ID is required for 'bySegment' method" });
+            }
+            const subscribers = await getSubscribersBySegment(userId, segmentId);
+            if (typeof subscribers === 'string') {
+                return res.status(404).json({ error: subscribers });
+            }
+            recipients = subscribers.map(sub => sub.email);
+        }
+
+        if (recipients.length === 0) {
+            return res.status(404).json({ error: "No recipients found" });
+        }
+
+        const smtp = await getSmtp(smtpId);
+
+        if (!smtp) {
+            return res.status(400).json({ error: "SMTP configuration not found" });
+        }
+
+        setImmediate(() => {
+            sendMailBackground(smtp, fromEmail, recipients, subject, content, batchLimit, batchInterval);
+        });
+
+        return res.status(202).json({
+            message: 'Email sending process initiated',
+            totalRecipients: recipients.length
+        });
+    } catch (error) {
+        console.error('Error in sendToPredefinedUsers:', error);
+        return res.status(500).json({ error: "Failed to initiate email sending process" });
+    }
+};
+
+export { sendMail, sendToPredefinedUsers };
