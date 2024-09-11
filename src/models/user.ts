@@ -23,15 +23,8 @@ const userSchema: Schema = new Schema(
       type: Boolean,
       default: false,
     },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now,
-    },
-  }
+  },
+  { timestamps: true }
 );
 
 userSchema.pre<IUser>('save', async function (next) {

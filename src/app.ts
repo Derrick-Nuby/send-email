@@ -2,6 +2,8 @@ import express, { Express } from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './swaggerConfig.js';
 import userRoutes from "./routes/user.js";
 import smtpRoutes from "./routes/smtp.js";
 import emailRoutes from "./routes/sendEmail.js";
@@ -26,10 +28,11 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 app.use('/api/user', userRoutes);
-app.use('/api/smtp', smtpRoutes);
-app.use('/api/email', emailRoutes);
-app.use('/api/segment', segmentRoutes);
-app.use('/api/subscriber', subscriberRoutes);
+app.use('/api/smtps', smtpRoutes);
+app.use('/api/emails', emailRoutes);
+app.use('/api/segments', segmentRoutes);
+app.use('/api/subscribers', subscriberRoutes);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/', (req, res) => {
     res.send('welcome to base app');
 });

@@ -1,11 +1,11 @@
 import { Router } from "express";
-import { createAccount, loginUser, getAllUsers, modifyUser, deleteUser, logoutUser, getSingleUser, cookieCreator } from "../controllers/user.js";
+import { createAccount, loginUser, getAllUsers, modifyUser, deleteUser, logoutUser, getSingleUser } from "../controllers/user.js";
 import { validateUserRegister, validateUserLogin, validateUserUpdate } from '../middlewares/userValidation.js';
 import { adminAuthJWT, userAuthJWT } from '../middlewares/auth.js';
 
 const router: Router = Router();
 
-router.post("/create", validateUserRegister, createAccount);
+router.post("/", validateUserRegister, createAccount);
 
 router.post("/login", validateUserLogin, loginUser);
 
