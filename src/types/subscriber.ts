@@ -11,7 +11,7 @@ export interface ISubscriber extends Document {
     email: string;
     notes: string;
     isSubscribed: boolean;
-    segmentId: Types.Array<Types.ObjectId | ISegment>;
-    createdBy: Types.Array<Types.ObjectId | IUser>;
+    segmentId: Types.ObjectId | ISegment;
+    createdBy: Types.ObjectId | IUser;
     customFields?: ICustomField;
 }
