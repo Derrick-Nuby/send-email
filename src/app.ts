@@ -31,7 +31,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/smtps', smtpRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/segments', segmentRoutes);
-app.use('/api/subscriber', subscriberRoutes);
+app.use('/api/subscribers', subscriberRoutes);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/', (req, res) => {
     res.send('welcome to base app');
