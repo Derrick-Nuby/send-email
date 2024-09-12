@@ -4,7 +4,7 @@ import Subscriber from "../models/subscriber.js";
 import Segment from "../models/segment.js";
 import csv from "csv-parser";
 import fs from "fs";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { csvToJson } from "../utils/csvToJsonCustom.js";
 
 const getAllAppSubscribers = async (req: Request, res: Response): Promise<any> => {
@@ -175,78 +175,6 @@ interface MulterRequest extends Request {
 
 const uploadSubscribersByCSV = async (req: MulterRequest, res: Response): Promise<void> => {
     try {
-
-        const userId = new Types.ObjectId(req.userId);
-
-        if (!req.userId) {
-            res.status(400).json({ message: "No file uploaded" });
-            return;
-        }
-
-        if (!req.file) {
-            res.status(400).json({ message: "No file uploaded" });
-            return;
-        }
-
-        const results: ISubscriber[] = [];
-
-        fs.createReadStream(req.file.path, { encoding: 'utf-8' })
-            .pipe(csv({
-                skipLines: 0,
-                strict: true
-            }))
-            .on('data', (data) => {
-                const subscriber: Partial<ISubscriber> = {
-                    name: data.name,
-                    email: data.email,
-                    notes: data.notes,
-                    isSubscribed: true,
-                    segmentId: data.segmentId,
-                    createdBy: userId,
-                    customFields: {}
-                };
-
-                Object.keys(data).forEach(key => {
-                    if (!['name', 'email', 'notes', 'isSubscribed', 'segmentId', 'createdBy'].includes(key)) {
-                        subscriber.customFields![key] = data[key];
-                    }
-                });
-
-                if (subscriber.name && subscriber.email) {
-                    results.push(subscriber as ISubscriber);
-                }
-            })
-            .on('end', async () => {
-                fs.unlinkSync(req.file!.path);
-
-                if (results.length > 0) {
-                    try {
-                        await Subscriber.insertMany(results);
-
-                        res.status(200).json({
-                            message: `${results.length} subscribers have been successfully uploaded and saved to the database`,
-                            subscribers: results
-                        });
-                    } catch (error) {
-                        console.error('Error saving subscribers to the database:', error);
-                        res.status(500).json({ message: "Error saving subscribers to the database" });
-                    }
-                } else {
-                    res.status(400).json({ message: "No valid subscribers found in the file" });
-                }
-            })
-            .on('error', (error) => {
-                console.error('Error parsing CSV:', error);
-                res.status(500).json({ message: "Error processing CSV file" });
-            });
-    } catch (error) {
-        console.error('Error processing request:', error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-};
-
-const csvTesting = async (req: MulterRequest, res: Response): Promise<void> => {
-    try {
         const userId = new Types.ObjectId(req.userId);
 
         if (!req.file) {
@@ -336,6 +264,77 @@ const csvTesting = async (req: MulterRequest, res: Response): Promise<void> => {
     }
 };
 
+const searchSubscriber = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = new Types.ObjectId(req.userId);
+        const searchQuery = req.query.query as string;
+        const subscribed = req.query.subscribed as string;
+        const segmentId = req.query.segmentid as string;
 
 
-export { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV, csvTesting };
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            res.status(400).json({ error: "Invalid user ID" });
+            return;
+        }
+
+        const filter: any = {
+            createdBy: new mongoose.Types.ObjectId(userId)
+        };
+
+        if (searchQuery && searchQuery.length >= 2) {
+            const regex = new RegExp(searchQuery, 'i');
+
+            filter.$or = [
+                { name: { $regex: regex } },
+                { email: { $regex: regex } },
+                { notes: { $regex: regex } },
+                {
+                    $expr: {
+                        $gt: [
+                            {
+                                $size: {
+                                    $filter: {
+                                        input: { $objectToArray: "$customFields" },
+                                        as: "field",
+                                        cond: { $regexMatch: { input: "$$field.v", regex: regex } }
+                                    }
+                                }
+                            },
+                            0
+                        ]
+                    }
+                }
+            ];
+        }
+        const isSubscribed = subscribed === 'true' ? true : subscribed === 'false' ? false : undefined;
+
+        if (isSubscribed !== undefined) {
+            filter.isSubscribed = isSubscribed;
+        }
+
+        if (segmentId) {
+            filter.segmentId = segmentId;
+        }
+
+        const subscribers = await Subscriber.find(filter)
+            .populate({
+                path: 'segmentId',
+                model: Segment,
+                select: '_id name description',
+            });
+
+        if (subscribers.length <= 0) {
+            res.status(404).json({ error: "No subscribers found for your search; please search again." });
+            return;
+        }
+
+        res.status(200).json({ subscribers });
+
+    } catch (error) {
+        console.error('Error searching subscribers:', error);
+        res.status(500).json({ error: "An error occurred while searching for subscribers." });
+    }
+};
+
+
+export { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV, searchSubscriber };
