@@ -5,6 +5,7 @@ import Segment from "../models/segment.js";
 import csv from "csv-parser";
 import fs from "fs";
 import { Types } from "mongoose";
+import { csvToJson } from "../utils/csvToJsonCustom.js";
 
 const getAllAppSubscribers = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -244,6 +245,92 @@ const uploadSubscribersByCSV = async (req: MulterRequest, res: Response): Promis
     }
 };
 
+const csvTesting = async (req: MulterRequest, res: Response): Promise<void> => {
+    try {
+        const userId = new Types.ObjectId(req.userId);
+
+        if (!req.file) {
+            res.status(400).json({ message: 'No file uploaded' });
+            return;
+        }
+
+        const filePath = req.file.path;
+
+        const { validSubscribers, invalidEntries } = await csvToJson(filePath, userId);
+
+        fs.unlinkSync(filePath);
+
+        // Batch insertion of valid subscribers
+        const batchSize = 100;
+        const insertedSubscribers: ISubscriber[] = [];
+        const insertionErrors: { subscriber: ISubscriber; error: string; }[] = [];
+
+        for (let i = 0; i < validSubscribers.length; i += batchSize) {
+            const batch = validSubscribers.slice(i, i + batchSize);
+            try {
+                const result = await Subscriber.insertMany(batch, { ordered: false, rawResult: true });
+
+                // Check if all documents were inserted successfully
+                if (result.insertedCount === batch.length) {
+                    insertedSubscribers.push(...batch);
+                } else {
+                    // Some documents failed to insert
+                    const insertedIds = new Set(Object.values(result.insertedIds));
+                    batch.forEach((subscriber, index) => {
+                        if (insertedIds.has(subscriber._id)) {
+                            insertedSubscribers.push(subscriber);
+                        } else {
+                            insertionErrors.push({
+                                subscriber,
+                                error: 'Failed to insert for unknown reason'
+                            });
+                        }
+                    });
+                }
+            } catch (error) {
+                if (error.writeErrors) {
+                    // Handle bulk write errors
+                    const failedIndexes = new Set(error.writeErrors.map((e: any) => e.index));
+                    batch.forEach((subscriber, index) => {
+                        if (failedIndexes.has(index)) {
+                            insertionErrors.push({
+                                subscriber,
+                                error: error.writeErrors.find((e: any) => e.index === index).errmsg || 'Unknown error during insertion'
+                            });
+                        } else {
+                            insertedSubscribers.push(subscriber);
+                        }
+                    });
+                } else {
+                    // If it's not a BulkWriteError, treat the entire batch as failed
+                    insertionErrors.push(...batch.map(subscriber => ({
+                        subscriber,
+                        error: error.message || 'Unknown error during insertion'
+                    })));
+                }
+            }
+        }
+
+        res.status(200).json({
+            message: `CSV processing completed`,
+            totalProcessed: validSubscribers.length + invalidEntries.length,
+            validSubscribers: validSubscribers.length,
+            invalidEntries: invalidEntries.length,
+            insertedSubscribers: insertedSubscribers.length,
+            insertionErrors: insertionErrors.length,
+            details: {
+                invalidEntries,
+                validSubscribers,
+                insertedSubscribers,
+                insertionErrors
+            }
+        });
+    } catch (error) {
+        console.error('Error in csvTesting controller:', error);
+        res.status(500).json({ message: 'Failed to process CSV', error: error.message });
+    }
+};
 
 
-export { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV };
+
+export { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV, csvTesting };

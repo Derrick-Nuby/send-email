@@ -7,6 +7,7 @@ const subscriberSchema = Joi.object({
   name:
     Joi.string()
       .min(4)
+      .allow('')
       .messages({
         'string.min': 'Name must be at least {#limit} characters long',
       }),
@@ -19,6 +20,7 @@ const subscriberSchema = Joi.object({
     }),
   notes:
     Joi.string()
+      .allow('')
       .min(5)
       .messages({
         'string.min': 'notes must be at least {#limit} characters long',
@@ -32,8 +34,9 @@ const subscriberSchema = Joi.object({
         'string.length': 'segmentId must be exactly 24 hexadecimal characters',
       }),
   customFields: Joi.object()
-    .pattern(Joi.string(), Joi.any())
+    .pattern(Joi.string().min(1), Joi.any())
     .messages({
+      'object.min': 'Custom fields must have at least one key-value pair',
       'object.unknown': 'Custom fields should be a valid key-value pair',
     })
 });
@@ -105,4 +108,4 @@ const validateSubscriberUpdate = async (req: Request, res: Response, next: NextF
   }
 };
 
-export { validateSubscriberCreation, validateSubscriberUpdate };
+export { validateSubscriberCreation, validateSubscriberUpdate, subscriberSchema };
