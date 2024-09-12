@@ -5,6 +5,7 @@ import Segment from "../models/segment.js";
 import csv from "csv-parser";
 import fs from "fs";
 import { Types } from "mongoose";
+import { csvToJson } from "../utils/csvToJsonCustom.js";
 
 const getAllAppSubscribers = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -244,6 +245,33 @@ const uploadSubscribersByCSV = async (req: MulterRequest, res: Response): Promis
     }
 };
 
+const csvTesting = async (req: MulterRequest, res: Response): Promise<void> => {
+    try {
+
+        const userId = new Types.ObjectId(req.userId);
+
+        if (!req.file) {
+            res.status(400).json({ message: 'No file uploaded' });
+            return;
+        }
+
+        const filePath = req.file.path;
+
+        const { validSubscribers, invalidEntries } = await csvToJson(filePath, userId);
+
+        fs.unlinkSync(filePath);
+
+        res.status(200).json({
+            message: `${validSubscribers.length} subscribers processed successfully`,
+            validSubscribers,
+            invalidEntries,
+        });
+    } catch (error) {
+        console.error('Error in csvTesting controller:', error);
+        res.status(500).json({ message: 'Failed to process CSV', error: error });
+    }
+};
 
 
-export { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV };
+
+export { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV, csvTesting };

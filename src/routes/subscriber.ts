@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV } from "../controllers/subscriber.js";
+import { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV, csvTesting } from "../controllers/subscriber.js";
 import { adminAuthJWT, userAuthJWT } from '../middlewares/auth.js';
 import { validateSubscriberCreation, validateSubscriberUpdate } from "../middlewares/subscriberValidation.js";
 
@@ -25,6 +25,8 @@ router.put("/:id", userAuthJWT, validateSubscriberUpdate, updateSubscriber);
 router.delete("/:id", userAuthJWT, deleteSubscriber);
 
 router.post("/file", userAuthJWT, upload.single('file'), uploadSubscribersByCSV);
+
+router.post("/testing-file", userAuthJWT, upload.single('file'), csvTesting);
 
 
 export default router;
