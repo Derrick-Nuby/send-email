@@ -212,7 +212,7 @@ const uploadSubscribersByCSV = async (req: MulterRequest, res: Response): Promis
                 });
 
                 if (subscriber.name && subscriber.email) {
-                    results.push(subscriber);
+                    results.push(subscriber as ISubscriber);
                 }
             })
             .on('end', async () => {
