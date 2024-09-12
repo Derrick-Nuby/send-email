@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV, searchSubscriber } from "../controllers/subscriber.js";
+import { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV, searchSubscriber, changeSubscriberSegment } from "../controllers/subscriber.js";
 import { adminAuthJWT, userAuthJWT } from '../middlewares/auth.js';
 import { validateSubscriberCreation, validateSubscriberUpdate } from "../middlewares/subscriberValidation.js";
 
@@ -17,6 +17,8 @@ router.get("/all", userAuthJWT, getAllAppSubscribers);
 router.get("/segment/:segmentId", userAuthJWT, getSubscribersBySegment);
 
 router.get("/search", userAuthJWT, searchSubscriber);
+
+router.post("/change-segment", userAuthJWT, changeSubscriberSegment);
 
 router.get("/:id", userAuthJWT, getSingleSubscriber);
 

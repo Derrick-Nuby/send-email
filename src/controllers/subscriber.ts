@@ -336,5 +336,44 @@ const searchSubscriber = async (req: Request, res: Response): Promise<void> => {
     }
 };
 
+const changeSubscriberSegment = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = new Types.ObjectId(req.userId);
+        const { subscriberIds, newSegmentId } = req.body;
 
-export { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV, searchSubscriber };
+        if (!Types.ObjectId.isValid(newSegmentId)) {
+            res.status(400).json({ error: 'Invalid newSegmentId' });
+            return;
+        }
+
+        if (!Array.isArray(subscriberIds) || subscriberIds.length === 0) {
+            res.status(400).json({ error: 'subscriberIds must be a non-empty array' });
+            return;
+        }
+
+        const subscriberObjectIds = subscriberIds.map((id: string) => new Types.ObjectId(id));
+
+        const result = await Subscriber.updateMany(
+            {
+                _id: { $in: subscriberObjectIds },
+                createdBy: userId
+            },
+            {
+                $set: { segmentId: new Types.ObjectId(newSegmentId) }
+            }
+        );
+
+        if (result.modifiedCount === 0) {
+            res.status(404).json({ error: 'No subscribers found or updated. Make sure they exist and belong to you.' });
+        } else {
+            res.status(200).json({ message: `${result.modifiedCount} subscribers were updated successfully.` });
+        }
+
+    } catch (error) {
+        console.error('Error updating subscriber segment:', error);
+        res.status(500).json({ error: 'An error occurred while updating subscribers.' });
+    }
+};
+
+
+export { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV, searchSubscriber, changeSubscriberSegment };
