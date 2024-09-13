@@ -4,7 +4,7 @@ import { adminAuthJWT, userAuthJWT } from '../middlewares/auth.js';
 
 const router: Router = Router();
 
-router.post("/send", sendMail);
+router.post("/send", userAuthJWT, sendMail);
 
 router.post("/predefined", userAuthJWT, sendToPredefinedUsers);
 

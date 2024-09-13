@@ -58,6 +58,8 @@
  *   post:
  *     summary: Send an email to a list of recipients.
  *     tags: [Email]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:

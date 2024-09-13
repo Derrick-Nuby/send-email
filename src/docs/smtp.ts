@@ -288,3 +288,84 @@
  *       500:
  *         description: Failed to delete SMTP configuration
  */
+
+/**
+ * @swagger
+ * /api/smtps/sendVerification:
+ *   post:
+ *     summary: Send SMTP verification email
+ *     description: Sends a verification email using the specified SMTP configuration to verify its settings.
+ *     tags: [SMTPS]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - smtpId
+ *               - email
+ *             properties:
+ *               smtpId:
+ *                 type: string
+ *                 description: The ID of the SMTP configuration to verify
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: The email address to send the verification email to
+ *     responses:
+ *       200:
+ *         description: Verification email sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 info:
+ *                   type: object
+ *                   description: Information about the sent email
+ *       400:
+ *         description: Bad request (missing SMTP ID or email)
+ *       404:
+ *         description: SMTP configuration not found
+ *       500:
+ *         description: Failed to send verification email
+ */
+
+/**
+ * @swagger
+ * /api/smtps/verify/{token}:
+ *   get:
+ *     summary: Verify SMTP configuration
+ *     description: Verifies an SMTP configuration using the provided token from the verification email.
+ *     tags: [SMTPS]
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The verification token received in the email
+ *     responses:
+ *       200:
+ *         description: SMTP configuration successfully verified
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 smtp:
+ *                   $ref: '#/components/schemas/SMTP'
+ *       400:
+ *         description: Invalid or expired token
+ *       404:
+ *         description: SMTP configuration not found
+ *       500:
+ *         description: Failed to verify SMTP configuration
+ */
