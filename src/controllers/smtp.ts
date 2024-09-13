@@ -103,11 +103,21 @@ const getUserSmtps = async (req: Request, res: Response): Promise<Response> => {
     }
 };
 
-const sendSmtpVerification = async (req: Request, res: Response): Promise<any> => {
+const sendSmtpVerification = async (req: Request, res: Response): Promise<void> => {
     try {
         const { smtpId, email } = req.body;
 
+        if (!smtpId || !email) {
+            res.status(400).json({ error: "SMTP ID and email are required." });
+            return;
+        }
+
         const smtp = await getSmtp(smtpId);
+
+        if (!smtp) {
+            res.status(404).json({ error: "SMTP configuration not found." });
+            return;
+        }
 
         const token = tokenGenerator({ smtpId: smtp._id });
 
@@ -243,21 +253,30 @@ const sendSmtpVerification = async (req: Request, res: Response): Promise<any> =
 
         const info = await transporter.sendMail(mailOptions);
 
-        return res.status(200).json({ message: "Verification email sent successfully.", info });
-
+        res.status(200).json({ message: "Verification email sent successfully.", info });
     } catch (error) {
         console.error("Error sending SMTP verification email:", error);
-        return res.status(500).json({ error: "Failed to send verification email." });
+        if (error instanceof Error) {
+            res.status(500).json({ error: error.message || "Failed to send verification email." });
+        } else {
+            res.status(500).json({ error: "An unexpected error occurred." });
+        }
     }
 };
 
-const verifySmtp = async (req: Request, res: Response): Promise<any> => {
+const verifySmtp = async (req: Request, res: Response): Promise<void> => {
     try {
         const { token } = req.params;
+
+        if (!token) {
+            res.status(400).json({ error: "Token is required." });
+            return;
+        }
 
         const decoded = decodeToken(token);
 
         if (!decoded) {
+            res.status(400).json({ error: "Invalid or expired token." });
             return;
         }
 
@@ -266,7 +285,8 @@ const verifySmtp = async (req: Request, res: Response): Promise<any> => {
         const smtp = await getSmtp(smtpId);
 
         if (!smtp) {
-            return res.status(400).json({ error: "Invalid SMTP configuration" });
+            res.status(404).json({ error: "SMTP configuration not found." });
+            return;
         }
 
         const updatedSmtp = await Smtp.findByIdAndUpdate(smtpId, {
@@ -274,11 +294,19 @@ const verifySmtp = async (req: Request, res: Response): Promise<any> => {
             lastTested: new Date()
         }, { new: true });
 
-        return res.status(200).json({ message: "SMTP successfully verified", smtp: updatedSmtp });
+        if (!updatedSmtp) {
+            res.status(500).json({ error: "Failed to update SMTP configuration." });
+            return;
+        }
 
+        res.status(200).json({ message: "SMTP successfully verified", smtp: updatedSmtp });
     } catch (error) {
         console.error("Error verifying SMTP:", error);
-        return res.status(500).json({ error: "Failed to verify SMTP configuration." });
+        if (error instanceof Error) {
+            res.status(500).json({ error: error.message || "Failed to verify SMTP configuration." });
+        } else {
+            res.status(500).json({ error: "An unexpected error occurred." });
+        }
     }
 };
 
