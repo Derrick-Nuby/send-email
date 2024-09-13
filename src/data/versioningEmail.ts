@@ -88,7 +88,7 @@ const content = `
         We have received a request to verify your SMTP settings. Please click the link below to verify your SMTP configuration:
       </p>
       <p>
-        <a href="${process.env.BASE_URL}/smtps/verify/${token}" target="_blank">
+        <a href="" target="_blank">
           Verify SMTP Settings
         </a>
       </p>
