@@ -45,7 +45,9 @@ const getAllSmtps = async (req: Request, res: Response): Promise<Response> => {
 
 const getSingleSmtp = async (req: Request, res: Response): Promise<Response> => {
     try {
-        const smtp = await Smtp.findById(req.params.id);
+        const userId = req.userId;
+
+        const smtp = await Smtp.findOne({ _id: req.params.id, createdBy: userId });
 
         if (!smtp) {
             return res.status(404).json({ error: "SMTP configuration not found" });
@@ -64,7 +66,9 @@ const getSingleSmtp = async (req: Request, res: Response): Promise<Response> => 
 
 const updateSmtp = async (req: Request, res: Response): Promise<Response> => {
     try {
-        const updatedSmtp = await Smtp.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const userId = req.userId;
+
+        const updatedSmtp = await Smtp.findOneAndUpdate({ _id: req.params.id, createdBy: userId }, req.body, { new: true });
 
         if (!updatedSmtp) {
             return res.status(404).json({ error: "SMTP configuration not found" });
@@ -79,7 +83,9 @@ const updateSmtp = async (req: Request, res: Response): Promise<Response> => {
 
 const deleteSmtp = async (req: Request, res: Response): Promise<Response> => {
     try {
-        const deletedSmtp = await Smtp.findByIdAndDelete(req.params.id);
+        const userId = req.userId;
+
+        const deletedSmtp = await Smtp.findOneAndDelete({ _id: req.params.id, createdBy: userId });
 
         if (!deletedSmtp) {
             return res.status(404).json({ error: "SMTP configuration not found" });
@@ -106,6 +112,8 @@ const getUserSmtps = async (req: Request, res: Response): Promise<Response> => {
 const sendSmtpVerification = async (req: Request, res: Response): Promise<void> => {
     try {
         const { smtpId, email } = req.body;
+        const userId = req.userId;
+
 
         if (!smtpId || !email) {
             res.status(400).json({ error: "SMTP ID and email are required." });
@@ -114,12 +122,12 @@ const sendSmtpVerification = async (req: Request, res: Response): Promise<void> 
 
         const smtp = await getSmtp(smtpId);
 
-        if (!smtp) {
+        if (!smtp || smtp.createdBy !== userId) {
             res.status(404).json({ error: "SMTP configuration not found." });
             return;
         }
 
-        const token = tokenGenerator({ smtpId: smtp._id });
+        const token = tokenGenerator({ smtpId: smtp._id, userId });
 
         const transporterOptions: any = {
             service: smtp.service,
@@ -267,6 +275,7 @@ const sendSmtpVerification = async (req: Request, res: Response): Promise<void> 
 const verifySmtp = async (req: Request, res: Response): Promise<void> => {
     try {
         const { token } = req.params;
+        const userId = req.userId;
 
         if (!token) {
             res.status(400).json({ error: "Token is required." });
@@ -284,7 +293,7 @@ const verifySmtp = async (req: Request, res: Response): Promise<void> => {
 
         const smtp = await getSmtp(smtpId);
 
-        if (!smtp) {
+        if (!smtp || smtp.createdBy !== userId) {
             res.status(404).json({ error: "SMTP configuration not found." });
             return;
         }
