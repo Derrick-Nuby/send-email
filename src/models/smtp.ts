@@ -27,6 +27,13 @@ const smtpSchema: Schema = new Schema(
     secure: {
       type: Boolean,
     },
+    isTested: {
+      type: Boolean,
+      default: false,
+    },
+    lastTested: {
+      type: Date,
+    },
     auth: {
       user: {
         type: String,

@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import Smtp from "../models/smtp.js";
+import nodemailer from 'nodemailer';
 import { encrypt, decrypt } from "../utils/encryption.js";
+import { getSmtp } from "../utils/getSmtp.js";
+import { tokenGenerator, decodeToken } from "../utils/tokenGenerator.js";
+import sendEmail from "../utils/sendEmail.js";
 
 const createSmtp = async (req: Request, res: Response): Promise<Response> => {
     try {
@@ -22,7 +26,7 @@ const createSmtp = async (req: Request, res: Response): Promise<Response> => {
 
         await newSmtp.save();
 
-        return res.status(201).json({ message: "SMTP configuration created successfully", smtp: newSmtp });
+        return res.status(201).json({ message: "SMTP configuration created successfully, Please Proceed to test your smtp so that you can start using it", smtp: newSmtp });
     } catch (error) {
         console.error(error);
         return res.status(500).json({ error: "Server error" });
@@ -99,4 +103,183 @@ const getUserSmtps = async (req: Request, res: Response): Promise<Response> => {
     }
 };
 
-export { createSmtp, getAllSmtps, getSingleSmtp, updateSmtp, deleteSmtp, getUserSmtps };
+const sendSmtpVerification = async (req: Request, res: Response): Promise<any> => {
+    try {
+        const { smtpId, email } = req.body;
+
+        const smtp = await getSmtp(smtpId);
+
+        const token = tokenGenerator({ smtpId: smtp._id });
+
+        const transporterOptions: any = {
+            service: smtp.service,
+            pool: smtp.pool,
+            host: smtp.host,
+            port: smtp.port,
+            secure: smtp.secure,
+            auth: {
+                user: smtp.auth.user,
+                pass: smtp.auth.pass,
+            },
+        };
+
+        const transporter = nodemailer.createTransport(transporterOptions);
+
+        const subject = `Please verify your SMTP settings`;
+        const content = `
+                        <html>
+                        <head>
+                        <style>
+                            body {
+                            font-family: 'Arial', sans-serif;
+                            margin: 0;
+                            padding: 0;
+                            background-color: #f4f6f8;
+                            color: #333;
+                            }
+                            .container {
+                            max-width: 800px;
+                            margin: 0 auto;
+                            padding: 20px;
+                            background-color: #ffffff;
+                            border-radius: 8px;
+                            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                            }
+                            .header {
+                            background-color: #007BFF;
+                            padding: 20px;
+                            color: #ffffff;
+                            text-align: center;
+                            border-top-left-radius: 8px;
+                            border-top-right-radius: 8px;
+                            }
+                            .header h1 {
+                            margin: 0;
+                            font-size: 24px;
+                            }
+                            .content {
+                            padding: 20px;
+                            text-align: left;
+                            color: #333;
+                            font-size: 16px;
+                            line-height: 1.6;
+                            }
+                            .content p {
+                            margin: 0 0 15px;
+                            }
+                            .content a {
+                            color: #007BFF;
+                            text-decoration: none;
+                            font-weight: bold;
+                            }
+                            .content a:hover {
+                            text-decoration: underline;
+                            }
+                            .footer {
+                            margin-top: 30px;
+                            text-align: center;
+                            font-size: 14px;
+                            color: #777;
+                            }
+                            .footer p {
+                            margin: 5px 0;
+                            }
+                            .footer a {
+                            color: #007BFF;
+                            text-decoration: none;
+                            }
+                            .footer a:hover {
+                            text-decoration: underline;
+                            }
+                            /* Responsive styling */
+                            @media (max-width: 768px) {
+                            .container {
+                                padding: 15px;
+                            }
+                            .header h1 {
+                                font-size: 20px;
+                            }
+                            .content p {
+                                font-size: 16px;
+                            }
+                            }
+                        </style>
+                        </head>
+                        <body>
+                        <div class="container">
+                            <div class="header">
+                            <h1>Verify Your SMTP Settings</h1>
+                            </div>
+                            <div class="content">
+                            <p>Hello,</p>
+                            <p>
+                                We have received a request to verify your SMTP settings. Please click the link below to verify your SMTP configuration:
+                            </p>
+                            <p>
+                                <a href="${process.env.BASE_URL}/smtps/verify/${token}" target="_blank">
+                                Verify SMTP Settings
+                                </a>
+                            </p>
+                            <p>If you did not request this verification, please ignore this email.</p>
+                            <p>Thank you,<br/>The DercedGroup Team</p>
+                            </div>
+                            <div class="footer">
+                            <p><strong>DercedGroup Ltd</strong></p>
+                            <p>Located: Kigali, Gasabo, Gacuriro</p>
+                            <p>&copy; ${new Date().getFullYear()} DercedGroup Ltd. All rights reserved.</p>
+                            <p><a href="https://DercedGroup.com" target="_blank">Visit Our Website</a></p>
+                            </div>
+                        </div>
+                        </body>
+                        </html>
+                        `;
+
+        const mailOptions: nodemailer.SendMailOptions = {
+            from: smtp.fromEmail,
+            to: email,
+            subject,
+            html: content,
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+
+        return res.status(200).json({ message: "Verification email sent successfully.", info });
+
+    } catch (error) {
+        console.error("Error sending SMTP verification email:", error);
+        return res.status(500).json({ error: "Failed to send verification email." });
+    }
+};
+
+const verifySmtp = async (req: Request, res: Response): Promise<any> => {
+    try {
+        const { token } = req.params;
+
+        const decoded = decodeToken(token);
+
+        if (!decoded) {
+            return;
+        }
+
+        const smtpId = decoded.smtpId;
+
+        const smtp = await getSmtp(smtpId);
+
+        if (!smtp) {
+            return res.status(400).json({ error: "Invalid SMTP configuration" });
+        }
+
+        const updatedSmtp = await Smtp.findByIdAndUpdate(smtpId, {
+            isTested: true,
+            lastTested: new Date()
+        }, { new: true });
+
+        return res.status(200).json({ message: "SMTP successfully verified", smtp: updatedSmtp });
+
+    } catch (error) {
+        console.error("Error verifying SMTP:", error);
+        return res.status(500).json({ error: "Failed to verify SMTP configuration." });
+    }
+};
+
+export { createSmtp, getAllSmtps, getSingleSmtp, updateSmtp, deleteSmtp, getUserSmtps, sendSmtpVerification, verifySmtp };

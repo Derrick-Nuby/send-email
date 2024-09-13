@@ -9,6 +9,8 @@ export interface ISmtp extends Document {
     secure?: boolean;
     fromEmail?: string;
     createdBy: string;
+    isTested?: boolean;
+    lastTested?: Date;
     auth: {
         user: string;
         pass: string;
