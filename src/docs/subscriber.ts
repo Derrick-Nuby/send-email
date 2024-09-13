@@ -338,3 +338,186 @@
  *                   type: string
  *                   example: "Failed to create subscribers from CSV"
  */
+
+
+/**
+ * @swagger
+ * /api/subscribers/change-segment:
+ *   post:
+ *     summary: Change the segment of multiple subscribers
+ *     tags: [Subscribers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               subscriberIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of subscriber IDs
+ *               newSegmentId:
+ *                 type: string
+ *                 description: The ID of the new segment
+ *     responses:
+ *       200:
+ *         description: Subscribers updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 modifiedCount:
+ *                   type: number
+ *       400:
+ *         description: Invalid input data
+ *       404:
+ *         description: No subscribers found or updated
+ *       500:
+ *         description: Server error
+ */
+
+
+/**
+ * @swagger
+ * /api/subscribers/search:
+ *   get:
+ *     summary: Search for subscribers based on query, subscription status, or segment
+ *     tags: [Subscribers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: query
+ *         schema:
+ *           type: string
+ *         description: Search string to filter subscribers by name, email, or custom fields
+ *       - in: query
+ *         name: subscribed
+ *         schema:
+ *           type: string
+ *         description: Filter by subscription status (true or false)
+ *       - in: query
+ *         name: segmentid
+ *         schema:
+ *           type: string
+ *         description: Segment ID to filter subscribers
+ *     responses:
+ *       200:
+ *         description: Subscribers found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Subscriber'
+ *       400:
+ *         description: Invalid input data
+ *       404:
+ *         description: No subscribers found
+ *       500:
+ *         description: Server error
+ */
+
+
+/**
+ * @swagger
+ * /api/subscribers/bulk:
+ *   delete:
+ *     summary: Bulk delete subscribers
+ *     tags: [Subscribers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               subscriberIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Array of subscriber IDs to delete
+ *     responses:
+ *       200:
+ *         description: Subscribers deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 deletedCount:
+ *                   type: number
+ *                 notFoundIds:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *       400:
+ *         description: Invalid input data
+ *       404:
+ *         description: No subscribers found or deleted
+ *       500:
+ *         description: Server error
+ */
+
+
+/**
+ * @swagger
+ * /api/subscribers/preview-upload:
+ *   post:
+ *     summary: Preview a CSV file upload for subscribers
+ *     tags: [Subscribers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               file:
+ *                 type: string
+ *                 format: binary
+ *                 description: The CSV file to preview
+ *     responses:
+ *       200:
+ *         description: CSV preview processed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalRows:
+ *                   type: number
+ *                 validSubscribers:
+ *                   type: object
+ *                   properties:
+ *                     count:
+ *                       type: number
+ *                     sample:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Subscriber'
+ *                 invalidEntries:
+ *                   type: object
+ *                   properties:
+ *                     count:
+ *                       type: number
+ *                     errors:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                 summary:
+ *                   type: object
+ *       400:
+ *         description: No file uploaded or invalid CSV
+ *       500:
+ *         description: Failed to process CSV preview
+ */
