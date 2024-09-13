@@ -7,7 +7,7 @@ const router: Router = Router();
 
 router.post("/", userAuthJWT, validateSmtpAddition, createSmtp);
 
-router.get("/", getAllSmtps);
+router.get("/", adminAuthJWT, getAllSmtps);
 
 router.get("/user", userAuthJWT, getUserSmtps);
 
