@@ -2,10 +2,40 @@ import { Response, Request } from "express";
 import { ISubscriber } from "../types/subscriber.js";
 import Subscriber from "../models/subscriber.js";
 import Segment from "../models/segment.js";
-import csv from "csv-parser";
-import fs from "fs";
 import mongoose, { Types } from "mongoose";
 import { csvToJson } from "../utils/csvToJsonCustom.js";
+import fs from "fs";
+
+interface MulterRequest extends Request {
+    file?: Express.Multer.File;
+}
+
+interface ValidationError {
+    row: number;
+    errors: string[];
+    data: any;
+}
+
+interface PreviewResult {
+    totalRows: number;
+    validSubscribers: {
+        count: number;
+        sample: ISubscriber[];
+    };
+    invalidEntries: {
+        count: number;
+        errors: ValidationError[];
+    };
+    summary: {
+        [key: string]: number;
+    };
+}
+
+interface BulkDeleteResult {
+    deletedCount: number;
+    notFoundIds: string[];
+}
+
 
 const getAllAppSubscribers = async (req: Request, res: Response): Promise<any> => {
     try {
@@ -169,9 +199,62 @@ const deleteSubscriber = async (req: Request, res: Response): Promise<any> => {
     }
 };
 
-interface MulterRequest extends Request {
-    file?: Express.Multer.File;
-}
+const bulkDeleteSubscribers = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = new Types.ObjectId(req.userId);
+        const subscriberIds = req.body.subscriberIds;
+
+        if (!Array.isArray(subscriberIds) || subscriberIds.length === 0) {
+            res.status(400).json({ message: "Invalid input: subscriberIds must be a non-empty array" });
+            return;
+        }
+
+        const objectIds = subscriberIds.filter(Types.ObjectId.isValid).map(id => new Types.ObjectId(id));
+        if (objectIds.length !== subscriberIds.length) {
+            res.status(400).json({ message: "One or more subscriberIds are invalid" });
+            return;
+        }
+
+        const userSubscribers = await Subscriber.find({
+            _id: { $in: objectIds },
+            createdBy: userId
+        }).select('_id');
+
+        const userSubscriberIds = userSubscribers.map(sub => sub._id);
+
+        const deleteResult = await Subscriber.deleteMany({
+            _id: { $in: userSubscriberIds }
+        });
+
+        const notFoundIds = objectIds
+            // @ts-ignore
+            .filter(id => !userSubscriberIds.some(subId => subId.equals(id)))
+            .map(id => id.toString());
+
+        const result: BulkDeleteResult = {
+            deletedCount: deleteResult.deletedCount,
+            notFoundIds: notFoundIds
+        };
+
+        if (result.deletedCount === 0 && notFoundIds.length === 0) {
+            res.status(404).json({ message: "No subscribers found for the given IDs", result });
+        } else if (result.deletedCount === 0) {
+            res.status(404).json({ message: "No subscribers were deleted. All provided IDs were not found", result });
+        } else {
+            res.status(200).json({
+                message: `${result.deletedCount} subscribers deleted successfully${notFoundIds.length > 0 ? `. ${notFoundIds.length} IDs were not found` : ''}`,
+                result: result
+            });
+        }
+
+    } catch (error) {
+        console.error('Error in bulkDeleteSubscribers:', error);
+        res.status(500).json({
+            message: 'Failed to delete subscribers',
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+};
 
 const uploadSubscribersByCSV = async (req: MulterRequest, res: Response): Promise<void> => {
     try {
@@ -188,7 +271,6 @@ const uploadSubscribersByCSV = async (req: MulterRequest, res: Response): Promis
 
         fs.unlinkSync(filePath);
 
-        // Batch insertion of valid subscribers
         const batchSize = 100;
         const insertedSubscribers: ISubscriber[] = [];
         const insertionErrors: { subscriber: ISubscriber; error: string; }[] = [];
@@ -198,11 +280,9 @@ const uploadSubscribersByCSV = async (req: MulterRequest, res: Response): Promis
             try {
                 const result = await Subscriber.insertMany(batch, { ordered: false, rawResult: true });
 
-                // Check if all documents were inserted successfully
                 if (result.insertedCount === batch.length) {
                     insertedSubscribers.push(...batch);
                 } else {
-                    // Some documents failed to insert
                     const insertedIds = new Set(Object.values(result.insertedIds));
                     batch.forEach((subscriber: ISubscriber, index: number) => {
                         // @ts-expect-error
@@ -233,7 +313,6 @@ const uploadSubscribersByCSV = async (req: MulterRequest, res: Response): Promis
                         }
                     });
                 } else {
-                    // If it's not a BulkWriteError, treat the entire batch as failed
                     insertionErrors.push(...batch.map(subscriber => ({
                         subscriber,
                         // @ts-expect-error
@@ -375,5 +454,53 @@ const changeSubscriberSegment = async (req: Request, res: Response): Promise<voi
     }
 };
 
+const previewUpload = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = new Types.ObjectId(req.userId);
 
-export { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV, searchSubscriber, changeSubscriberSegment };
+        if (!req.file) {
+            res.status(400).json({ message: 'No file uploaded' });
+            return;
+        }
+
+        const filePath = req.file.path;
+
+        const { validSubscribers, invalidEntries } = await csvToJson(filePath, userId);
+
+        fs.unlinkSync(filePath);
+
+        const result: PreviewResult = {
+            totalRows: validSubscribers.length + invalidEntries.length,
+            validSubscribers: {
+                count: validSubscribers.length,
+                sample: validSubscribers.slice(0, 5)
+            },
+            invalidEntries: {
+                count: invalidEntries.length,
+                errors: invalidEntries
+            },
+            summary: {}
+        };
+
+        invalidEntries.forEach((entry) => {
+            entry.errors.forEach((error) => {
+                result.summary[error] = (result.summary[error] || 0) + 1;
+            });
+        });
+
+        res.status(200).json({
+            message: 'CSV preview processed successfully',
+            result
+        });
+
+    } catch (error) {
+        console.error('Error in previewUpload function:', error);
+        res.status(500).json({
+            message: 'Failed to process CSV for preview',
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+};
+
+
+export { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV, searchSubscriber, changeSubscriberSegment, previewUpload, bulkDeleteSubscribers };
