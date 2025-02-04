@@ -11,15 +11,15 @@ router.get("/", adminAuthJWT, getAllSmtps);
 
 router.get("/user", userAuthJWT, getUserSmtps);
 
-router.post('/sendVerification', sendSmtpVerification);
+router.post('/sendVerification', userAuthJWT, sendSmtpVerification);
 
-router.get('/verify/:token', verifySmtp);
+router.get('/verify/:token', userAuthJWT, verifySmtp);
 
-router.get('/:id', getSingleSmtp);
+router.get('/:id', userAuthJWT, getSingleSmtp);
 
-router.put("/:id", validateSmtpUpdate, updateSmtp);
+router.put("/:id", validateSmtpUpdate, userAuthJWT, updateSmtp);
 
-router.delete("/:id", deleteSmtp);
+router.delete("/:id", userAuthJWT, deleteSmtp);
 
 
 export default router;
