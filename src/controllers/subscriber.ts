@@ -502,5 +502,37 @@ const previewUpload = async (req: Request, res: Response): Promise<void> => {
     }
 };
 
+const addBulkJsonSubscribers = async (req: Request, res: Response): Promise<any> => {
+    try {
+        const userId = new Types.ObjectId(req.userId);
+        const subscribersData = req.body;
 
-export { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV, searchSubscriber, changeSubscriberSegment, previewUpload, bulkDeleteSubscribers };
+        const subscribers = subscribersData.map((data: any) => {
+            const { name, email, notes, segmentId, isSubscribed, ...customFields } = data;
+            return {
+                name,
+                email,
+                notes,
+                segmentId,
+                createdBy: userId,
+                isSubscribed: isSubscribed !== undefined ? isSubscribed : true,
+                customFields,
+            };
+        });
+
+        // const result = await Subscriber.insertMany(subscribers, { ordered: false });
+
+        console.log(subscribers);
+
+
+        res.status(201).json({
+            message: '${result.length} subscribers added successfully',
+            // subscribers: result,
+        });
+    } catch (error) {
+        console.error('Error adding bulk JSON subscribers:', error);
+        res.status(500).json({ error: 'Failed to add subscribers' });
+    }
+};
+
+export { getSubscribers, getSingleSubscriber, createSubscriber, updateSubscriber, deleteSubscriber, getSubscribersBySegment, getAllAppSubscribers, uploadSubscribersByCSV, searchSubscriber, changeSubscriberSegment, previewUpload, bulkDeleteSubscribers, addBulkJsonSubscribers };

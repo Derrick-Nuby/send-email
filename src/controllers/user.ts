@@ -67,7 +67,7 @@ const loginUser = async (req: Request, res: Response): Promise<any> => {
 
 const getAllUsers = async (req: Request, res: Response): Promise<any> => {
   try {
-    const users: IUser[] = await User.find();
+    const users: IUser[] = await User.find().select('-password');
     res.status(200).json({ users });
   } catch (error) {
     throw error;
@@ -116,16 +116,6 @@ const deleteUser = async (req: Request, res: Response): Promise<any> => {
   try {
     const { password, confirmation } = req.body;
     const userId = req.userId;
-    // const isAdmin = req.isAdmin;
-
-
-    // if (isAdmin === true) {
-    //   const deletedUser = await User.findOneAndDelete({ _id: userId });
-    //   return res.status(200).json({
-    //     message: 'User deleted successfully',
-    //     user: deletedUser,
-    //   });
-    // }
 
     if (!password || typeof confirmation !== 'boolean') {
       return res.status(400).json({ error: 'Password and confirmation are required' });
@@ -148,6 +138,32 @@ const deleteUser = async (req: Request, res: Response): Promise<any> => {
     res.status(200).json({
       message: 'User deleted successfully',
       user: deletedUser,
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+const adminDeleteUser = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const userId = req.params.id;
+    const isAdmin = req.isAdmin;
+
+    if (isAdmin) {
+      const deletedUser = await User.findOneAndDelete({ _id: userId });
+
+      if (!deletedUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      return res.status(200).json({
+        message: 'User deleted successfully',
+        user: deletedUser,
+      });
+    }
+
+    res.status(404).json({
+      message: 'You do not have necessary permissions to delete this user',
     });
   } catch (error) {
     console.error('Error deleting user:', error);
@@ -195,4 +211,4 @@ const getSingleUser = async (req: Request, res: Response): Promise<any> => {
 
 
 
-export { createAccount, loginUser, getAllUsers, modifyUser, deleteUser, logoutUser, getSingleUser };
+export { createAccount, loginUser, getAllUsers, modifyUser, deleteUser, logoutUser, getSingleUser, adminDeleteUser };
