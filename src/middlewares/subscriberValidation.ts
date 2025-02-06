@@ -87,6 +87,9 @@ const bulkJsonSubscriberSchema = Joi.array().items(
     customFields: Joi.object().pattern(Joi.string().min(1), Joi.any()).messages({
       'object.min': 'Custom fields must have at least one key-value pair',
       'object.unknown': 'Custom fields should be a valid key-value pair',
+    }),
+    isSubscribed: Joi.boolean().required().messages({
+      'any.required': 'isSubscribed is required',
     })
   })
 );
@@ -134,7 +137,7 @@ const validateBulkJsonSubscribers = async (req: Request, res: Response, next: Ne
   try {
     const { error } = await bulkJsonSubscriberSchema.validate(req.body, { abortEarly: false });
     if (error) {
-      const errorMessage = error.details.map((detail) => detail.message).join('; ');
+      const errorMessage = error.details.map((detail) => detail.message).join('\n');
       return res.status(400).json({ error: errorMessage });
     }
     next();

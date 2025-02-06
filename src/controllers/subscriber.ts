@@ -508,7 +508,7 @@ const addBulkJsonSubscribers = async (req: Request, res: Response): Promise<any>
         const subscribersData = req.body;
 
         const subscribers = subscribersData.map((data: any) => {
-            const { name, email, notes, segmentId, isSubscribed, ...customFields } = data;
+            const { name, email, notes, segmentId, isSubscribed, customFields, ...rest } = data;
             return {
                 name,
                 email,
@@ -516,18 +516,15 @@ const addBulkJsonSubscribers = async (req: Request, res: Response): Promise<any>
                 segmentId,
                 createdBy: userId,
                 isSubscribed: isSubscribed !== undefined ? isSubscribed : true,
-                customFields,
+                customFields: { ...customFields, ...rest },
             };
         });
 
-        // const result = await Subscriber.insertMany(subscribers, { ordered: false });
-
-        console.log(subscribers);
-
+        const result = await Subscriber.insertMany(subscribers, { ordered: false });
 
         res.status(201).json({
-            message: '${result.length} subscribers added successfully',
-            // subscribers: result,
+            message: `${result.length} subscribers added successfully`,
+            subscribers: result,
         });
     } catch (error) {
         console.error('Error adding bulk JSON subscribers:', error);
